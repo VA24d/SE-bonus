@@ -36,19 +36,23 @@ As software systems increasingly transition toward cloud-native microservices an
 
 For organizations deploying cloud-native distributed systems at scale, minor inefficiencies in per-event processing can compound into significant environmental and infrastructure costs. The motivation for this research is to evaluate software design patterns for microservices through a rigorous sustainability lens, recognizing that macro-level architectural choices often exert a significant long-term impact on resource utilization.
 
-This project proposes a simulation study to determine whether common event-driven design decisions can be systematically ranked by their resource consumption per business event. By quantifying the tradeoffs inherent in topology, broker selection, and serialization using proxy metrics, we provide a theoretical framework for estimating the operational energy component of the Software Carbon Intensity (SCI) specification in practice. To promote reproducibility and green software practices, all benchmarking scripts, mathematical models, and datasets developed for this study are fully open-source and publicly available at: \url{https://github.com/vijay-2023111007/energy-aware-microservices}.
+This project proposes a simulation study to determine whether common event-driven design decisions can be systematically ranked by their resource consumption per business event. By quantifying the tradeoffs inherent in topology, broker selection, and serialization using proxy metrics, we provide a theoretical framework for estimating the operational energy component of the Software Carbon Intensity (SCI) specification in practice. To promote reproducibility and green software practices, all benchmarking scripts, mathematical models, and datasets developed for this study are fully open-source and publicly available at: \url{https://github.com/VA24d/SE-bonus}.
 
 \section{Literature Review}
 To position this empirical simulation study, recent academic research on green software engineering provides a concrete foundation for evaluating architectural energy footprints.
 
 \subsection{Green Software Engineering and SCI}
-The Software Carbon Intensity (SCI) specification provides a standard methodology for scoring the carbon footprint of software applications. SCI measures carbon emissions per functional unit, factoring in operational energy (compute, storage, and network) and the embodied emissions of the underlying hardware. Reducing the CPU and network overhead directly lowers the operational energy component of the SCI score \cite{b1, b2}.
+The Software Carbon Intensity (SCI) specification, officially codified as ISO/IEC 21031:2024, provides a standard methodology for scoring the carbon footprint of software applications. SCI measures carbon emissions per functional unit, establishing an intensity rate using the equation:
+\begin{equation}
+    SCI = \frac{(E \times I) + M}{R}
+\end{equation}
+where $E$ is operational energy, $I$ is the grid carbon intensity, $M$ is the embodied carbon of the hardware, and $R$ represents the functional unit (e.g., events processed). Reducing the CPU and network overhead directly lowers the operational energy ($E$) component of the SCI score \cite{b1, b2}.
 
 \subsection{Event-Driven Microservices Topologies}
 Microservice architectures differ radically in how services interact. Empirical studies consistently find that asynchronous choreography yields lower end-to-end latency and CPU utilization than strict synchronous orchestration. For instance, quantitative measurements by Ristova et al. evaluating six canonical service-dependency topologies observed that parallel fan-out structures (highly asynchronous) were the most energy-efficient, while sequential chain designs consumed significantly more energy (up to nearly 39 kJ at scale) \cite{b4}. Orchestrated call chains incur idle CPU blocking overhead, whereas event-driven choreography leverages concurrency to improve resource utilization. 
 
 \subsection{Message Broker Performance}
-Message brokers exhibit different resource profiles based on their architecture. Benchmark reports indicate that Kafka achieves much higher throughput than RabbitMQ, but with higher baseline resource use. Kafka can sustain roughly 76,000--100,000+ messages per second compared to 7,000--18,000 msg/s for RabbitMQ \cite{b5}. Consequently, Kafka's theoretical CPU usage per message is lower at massive scales. RabbitMQ is resource-efficient for low-volume scenarios due to its in-memory nature, but Kafka becomes substantially more efficient per-message at scale due to sequential disk I/O and batching.
+Message brokers exhibit different resource profiles based on their architecture. Benchmark reports indicate that Kafka achieves much higher throughput than RabbitMQ, but with higher baseline resource use. Kafka can sustain roughly 76,000--100,000+ messages per second compared to 7,000--18,000 msg/s for RabbitMQ \cite{b5}. Consequently, Kafka's theoretical CPU usage per message is lower at massive scales, largely due to its utilization of the \texttt{sendfile} zero-copy system call and sequential disk I/O, which bypasses application-level CPU context switching. Conversely, RabbitMQ is highly resource-efficient for low-volume scenarios due to its in-memory nature, allowing it to use nearly 29\% less memory than Kafka for lightweight loads.
 
 \subsection{Serialization Formats}
 The choice of data format directly affects CPU and network proxy metrics. A recent ICSOFT 2025 study by Shatnawi et al. refactored web services from JSON to Protocol Buffers (Protobuf), reporting a 60--80\% reduction in payload size, an 80\% faster response time, 17\% lower CPU utilization, and an 18--33\% reduction in energy consumption \cite{b6}. This quantifies the "JSON tax" consisting of extra CPU cycles for text parsing and network energy for larger payloads, suggesting that binary schemas provide a clear resource win in high-throughput environments \cite{b3}.
@@ -138,7 +142,7 @@ By simulating the proxy metrics tied to core architectural decisions, this study
 
 \begin{thebibliography}{00}
 \bibitem{b1} R. Mahmoud and A. Qusef, ``A Systematic Literature Review on Green Software Engineering,'' \textit{IEEE Access}, vol. 10, pp. 8652--8664, 2022.
-\bibitem{b2} Green Software Foundation, ``Software Carbon Intensity (SCI) Specification,'' 2021. [Online]. Available: \url{https://greensoftware.foundation/sci}. [Accessed: 30-Apr-2026].
+\bibitem{b2} Green Software Foundation, ``Software Carbon Intensity (SCI) Specification (ISO/IEC 21031:2024),'' 2024. [Online]. Available: \url{https://greensoftware.foundation/sci}. [Accessed: 30-Apr-2026].
 \bibitem{b3} S. Hasan et al., ``Performance and Energy Efficiency of Serialization Formats in Microservices,'' \textit{Journal of Cloud Computing}, vol. 12, no. 1, p. 34, 2023.
 \bibitem{b4} S. Ristova et al., ``Energy Footprint of Microservice Topologies,'' \textit{IEEE Transactions on Software Engineering}, vol. 49, no. 4, pp. 2100--2115, 2023.
 \bibitem{b5} AutoMQ, ``Apache Kafka vs. RabbitMQ: Differences \& Comparison,'' Industry Benchmark Report, 2024.
