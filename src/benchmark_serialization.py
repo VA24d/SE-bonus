@@ -1,9 +1,10 @@
 import json
 import time
-import struct
 import pickle
 import sys
 from codecarbon import EmissionsTracker
+
+import event_pb2
 
 try:
     import msgpack
@@ -39,26 +40,31 @@ def benchmark_json(events):
     total_size = sum(len(s) for s in serialized)
     return total_size, serialize_time, deserialize_time
 
-def benchmark_struct(events):
-    # Simulates a tightly packed binary format like Protobuf
-    # Format: q (long long), q (long long), i (int), f (float)
-    fmt = 'qqif'
-    
-    # Serialization
+def benchmark_protobuf(events):
+    # Serialization using actual Protobuf classes
     start = time.perf_counter()
-    serialized = [struct.pack(fmt, e["order_id"], e["user_id"], e["status"], e["amount"]) for e in events]
+    serialized = []
+    for e in events:
+        msg = event_pb2.Event(
+            order_id=e["order_id"],
+            user_id=e["user_id"],
+            status=e["status"],
+            amount=e["amount"]
+        )
+        serialized.append(msg.SerializeToString())
     serialize_time = time.perf_counter() - start
     
-    # Deserialization
+    # Deserialization using actual Protobuf classes
     start = time.perf_counter()
     deserialized = []
     for s in serialized:
-        unpacked = struct.unpack(fmt, s)
+        msg = event_pb2.Event()
+        msg.ParseFromString(s)
         deserialized.append({
-            "order_id": unpacked[0],
-            "user_id": unpacked[1],
-            "status": unpacked[2],
-            "amount": unpacked[3]
+            "order_id": msg.order_id,
+            "user_id": msg.user_id,
+            "status": msg.status,
+            "amount": msg.amount
         })
     deserialize_time = time.perf_counter() - start
     
@@ -98,10 +104,10 @@ if __name__ == "__main__":
     print(f"Actual Energy Consumed: {json_energy:.6f} kWh")
     print(f"Carbon Emissions: {json_emissions:.6f} kg CO2eq")
     
-    print("\n--- Running Struct/Binary Benchmark (Protobuf Simulation) ---")
-    tracker_bin = EmissionsTracker(project_name="Binary_Serialization", log_level="error")
+    print("\n--- Running True Protobuf Benchmark ---")
+    tracker_bin = EmissionsTracker(project_name="Protobuf_Serialization", log_level="error")
     tracker_bin.start()
-    s_size, s_ser, s_deser = benchmark_struct(events)
+    s_size, s_ser, s_deser = benchmark_protobuf(events)
     bin_emissions = tracker_bin.stop()
     bin_energy = tracker_bin._total_energy.kWh
     print(f"Total Payload Size: {s_size / (1024*1024):.2f} MB")
@@ -124,5 +130,5 @@ if __name__ == "__main__":
         print(f"Carbon Emissions: {msg_emissions:.6f} kg CO2eq")
     
     print("\n--- EMPIRICAL ENERGY SUMMARY ---")
-    print(f"Binary vs JSON CPU Time Reduction: {(( (j_ser+j_deser) - (s_ser+s_deser) ) / (j_ser+j_deser)) * 100:.1f}%")
-    print(f"Binary vs JSON Physical Energy Reduction: {((json_energy - bin_energy) / json_energy) * 100:.1f}%")
+    print(f"Protobuf vs JSON CPU Time Reduction: {(( (j_ser+j_deser) - (s_ser+s_deser) ) / (j_ser+j_deser)) * 100:.1f}%")
+    print(f"Protobuf vs JSON Physical Energy Reduction: {((json_energy - bin_energy) / json_energy) * 100:.1f}%")

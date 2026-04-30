@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package event;
+
+// The business event data payload
+message Event {
+    int64 order_id = 1;
+    int64 user_id = 2;
+    int32 status = 3;
+    float amount = 4;
+}
+
+// The response from the service
+message EventResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+// The gRPC service simulating the microservice
+service EventService {
+    rpc ProcessEvent (Event) returns (EventResponse);
+}
