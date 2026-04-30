@@ -1,0 +1,36 @@
+Towards Energy-Aware Design Choices in
+Event-Driven Microservices
+Vijay – 2023111007
+
+As software systems increasingly transition toward cloud-native microservices and event-driven architectures (EDA),
+decisions regarding service topology, message broker selection, and data serialization formats are traditionally guided
+by scalability, resilience, and responsiveness. However, these structural choices profoundly influence CPU cycles,
+network traffic, memory pressure, and message broker overhead—metrics that directly translate into physical
+hardware energy consumption. For organizations deploying cloud-native distributed systems at scale, minor
+inefficiencies in per-event processing compound into massive environmental and infrastructure costs.
+The motivation for this research is to evaluate software design patterns for microservices through a rigorous
+sustainability lens, recognizing that macro-level architectural choices often exert a more significant long-term energy
+impact than micro-level code optimizations. This project proposes an empirical study to determine whether common
+event-driven design decisions can be systematically ranked by their energy consumption per business event, enabling
+architects to make greener choices without sacrificing system quality.
+The experimental scope focuses on a controlled microservice testbed (4–6 services) deployed via containers on a
+standardized machine. The study evaluates three critical, practical dimensions:
+1. EDA Topology: Chain versus Parallel Fan-Out. Current empirical research indicates that dense Chain
+topologies often experience steep increases in energy consumption at scale, whereas Parallel Fan-Out
+configurations tend to emerge as highly energy-efficient under CPU-bound loads.
+2. Broker Choice: Apache Kafka versus RabbitMQ. The study will evaluate the energy overhead of Kafka's
+distributed log architecture, which guarantees high throughput, against RabbitMQ's traditional message
+broker approach with durable queues.
+3. Serialization Format: JSON versus Protobuf. Binary formats like Protobuf typically produce messages that
+are 3 to 5 times smaller than JSON, potentially reducing network transmission energy and computational
+deserialization overhead.
+The workload will simulate realistic asynchronous business workflows, such as order processing, user notifications,
+and inventory updates. For each configuration, the system will be stress-tested under controlled event rates. Measured
+metrics will include latency per event, system throughput, CPU and memory utilization, and network bytes
+transferred. Crucially, the study will map these metrics to the standardized Software Carbon Intensity (SCI)
+specification, calculating the precise rate of energy and carbon emissions relative to a functional unit (e.g., per 1,000
+events).
+The expected contribution of this research is a highly empirical decision guide for sustainable event-driven software
+design, identifying the optimal combinations of topology, broker, and serialization to maximize energy efficiency.
+
+
