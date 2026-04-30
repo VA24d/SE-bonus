@@ -46,7 +46,7 @@ The Software Carbon Intensity (SCI) specification, officially codified as ISO/IE
 \begin{equation}
     SCI = \frac{(E \times I) + M}{R}
 \end{equation}
-where $E$ is operational energy, $I$ is the grid carbon intensity, $M$ is the embodied carbon of the hardware, and $R$ represents the functional unit (e.g., events processed). Reducing the CPU and network overhead directly lowers the operational energy ($E$) component of the SCI score \cite{b1, b2}.
+where $E$ is operational energy, $I$ is the grid carbon intensity, $M$ is the embodied carbon of the hardware, and $R$ represents the functional unit (e.g., events processed). Optimizing architectural choices directly lowers the operational energy ($E$) component. For example, recent comparative analyses by Capuano, Muccini, and Vaidhyanathan demonstrate that microservice architectures provide energy savings under heavy loads compared to monoliths, but only if the topology and network interactions are strictly optimized \cite{b1, b2}.
 
 \subsection{Event-Driven Microservices Topologies}
 Microservice architectures differ radically in how services interact. Empirical studies consistently find that asynchronous choreography yields lower end-to-end latency and CPU utilization than strict synchronous orchestration. For instance, quantitative measurements by Ristova et al. evaluating six canonical service-dependency topologies observed that parallel fan-out structures (highly asynchronous) were the most energy-efficient, while sequential chain designs consumed significantly more energy (up to nearly 39 kJ at scale) \cite{b4}. Orchestrated call chains incur idle CPU blocking overhead, whereas event-driven choreography leverages concurrency to improve resource utilization. 
@@ -141,7 +141,7 @@ This will transition our findings from a theoretical resource model into a fully
 By simulating the proxy metrics tied to core architectural decisions, this study suggests that sustainability is influenced by system design long before code-level optimizations occur. Transitioning from synchronous JSON chains to parallelized, binary-encoded, Kafka-backed streams can reduce resource-use proxies (CPU time, thread blocking, payload footprint) that correlate with hardware power models. This research provides a theoretical framework to empower software engineers to integrate sustainability as a core non-functional requirement, utilizing these guidelines to optimize the operational energy components of modern cloud-native applications.
 
 \begin{thebibliography}{00}
-\bibitem{b1} R. Mahmoud and A. Qusef, ``A Systematic Literature Review on Green Software Engineering,'' \textit{IEEE Access}, vol. 10, pp. 8652--8664, 2022.
+\bibitem{b1} R. Capuano, E. O'Dea, H. Muccini, and K. Vaidhyanathan, ``A Comparative Analysis of Monolith vs Microservices Energy Consumption,'' in \textit{European Conference on Software Architecture (ECSA)}, Springer, 2025.
 \bibitem{b2} Green Software Foundation, ``Software Carbon Intensity (SCI) Specification (ISO/IEC 21031:2024),'' 2024. [Online]. Available: \url{https://greensoftware.foundation/sci}. [Accessed: 30-Apr-2026].
 \bibitem{b3} S. Hasan et al., ``Performance and Energy Efficiency of Serialization Formats in Microservices,'' \textit{Journal of Cloud Computing}, vol. 12, no. 1, p. 34, 2023.
 \bibitem{b4} S. Ristova et al., ``Energy Footprint of Microservice Topologies,'' \textit{IEEE Transactions on Software Engineering}, vol. 49, no. 4, pp. 2100--2115, 2023.

@@ -32,5 +32,3 @@ specification, calculating the precise rate of energy and carbon emissions relat
 events).
 The expected contribution of this research is a highly empirical decision guide for sustainable event-driven software
 design, identifying the optimal combinations of topology, broker, and serialization to maximize energy efficiency.
-
-
