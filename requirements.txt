@@ -1,0 +1,23 @@
+# Pinned dependencies for reproducibility
+# Python 3.12 required (tested on 3.12.12, Apple M2 ARM64)
+
+# Serialization
+protobuf==5.29.3
+msgpack==1.1.1
+
+# Network benchmarking
+grpcio==1.76.0
+grpcio-tools==1.71.2
+Flask==3.1.2
+requests==2.32.5
+
+# Energy tracking (TDP-based on Apple Silicon; RAPL on Intel/AMD)
+codecarbon==3.2.6
+
+# Visualization
+matplotlib==3.10.7
+numpy==2.3.5
+
+# Usage:
+#   pip install -r requirements.txt
+#   cd src && python -m grpc_tools.protoc -I proto --python_out=. --grpc_python_out=. proto/event.proto
