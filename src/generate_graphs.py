@@ -2,13 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def generate_serialization_chart():
-    # Actual measured values from benchmark runs (1,000,000 events)
-    # JSON: 67.71 MB payload, 2434.93 ms total CPU time (ser+deser)
-    # MsgPack: ~38.15 MB payload, ~881.23 ms total CPU time (from emissions.csv duration)
-    # Protobuf: 15.26 MB payload, 1405.81 ms total CPU time (ser+deser)
+    # Measured values from benchmark_serialization.py (1,000,000 events, 5 runs)
+    # JSON:     67.71 MB payload, 2209.01 ms mean CPU time (ser+deser)
+    # MsgPack:  49.59 MB payload,  838.84 ms mean CPU time (ser+deser)
+    # Protobuf: 15.26 MB payload, 1597.31 ms mean CPU time (ser+deser)
     formats = ['JSON', 'MessagePack', 'Protobuf']
-    sizes_mb = [67.71, 49.59, 15.26]   # MB (actual measured payload sizes)
-    times_ms = [2642.80, 906.03, 1590.83]  # ms (actual measured ser+deser CPU time)
+    sizes_mb = [67.71, 49.59, 15.26]
+    times_ms = [2209.01, 838.84, 1597.31]
 
     fig, ax1 = plt.subplots(figsize=(8, 5))
 
@@ -39,12 +39,12 @@ def generate_serialization_chart():
     plt.close()
 
 def generate_topology_chart():
-    # Actual measured values from microservices_topology.py (real HTTP servers)
-    # 50 events, 3 services, 50ms processing + 10ms network per hop
-    # Chain: 10.15s (sequential: 50 events × 3 services × (50ms + 10ms) = 9.0s + overhead)
-    # Fan-Out: 3.60s (parallel: 50 events × max(50ms + 10ms) = 3.0s + overhead)
+    # Measured values from microservices_topology.py (real HTTP servers, 5 runs)
+    # 50 events × 3 services × (50ms processing + 10ms network/hop)
+    # Chain:   10.23s mean (theoretical min 9.0s; excess = HTTP overhead)
+    # Fan-Out:  3.47s mean (theoretical min 3.0s)
     topologies = ['Chain (Sequential)', 'Fan-Out (Parallel)']
-    latency = [7.68, 2.56]  # seconds (actual measured from microservices_topology.py)
+    latency = [10.23, 3.47]  # seconds (measured)
 
     fig, ax = plt.subplots(figsize=(7, 5))
     bars = ax.bar(topologies, latency, color=['tab:orange', 'tab:green'], width=0.5)
@@ -58,8 +58,8 @@ def generate_topology_chart():
                 va='bottom', ha='center', fontweight='bold')
 
     # Annotate reduction
-    ax.annotate('66.7% latency\nreduction',
-                xy=(1, latency[1]), xytext=(0.5, 5.0),
+    ax.annotate('66.1% latency\nreduction',
+                xy=(1, latency[1]), xytext=(0.5, 6.5),
                 arrowprops=dict(arrowstyle='->', color='black'),
                 ha='center', fontsize=9, color='darkgreen')
 
@@ -82,9 +82,9 @@ def generate_broker_chart():
 
     ax.fill_between(rates, 100, 105, color='red', alpha=0.15, label='Overload Zone (≥100%)')
 
-    # Annotate crossover point (~4,200 msg/s)
-    ax.axvline(x=4200, color='gray', linestyle='--', alpha=0.6, linewidth=1)
-    ax.text(4400, 55, 'Crossover\n~4,200 msg/s', fontsize=8, color='gray')
+    # Annotate crossover point (2,034 msg/s — analytical solve from benchmark_broker_simulation.py)
+    ax.axvline(x=2034, color='gray', linestyle='--', alpha=0.6, linewidth=1)
+    ax.text(2300, 55, 'Crossover\n2,034 msg/s', fontsize=8, color='gray')
 
     # Annotate model equations
     ax.text(0.02, 0.97,

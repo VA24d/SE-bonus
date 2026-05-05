@@ -27,3 +27,4 @@ skills-lock.json
 .DS_Store
 __pycache__/
 *.pyc
+.copilot-specs-cache/

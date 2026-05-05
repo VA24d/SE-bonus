@@ -7,6 +7,11 @@ import tracemalloc
 import gc
 import statistics
 
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'proto'))
+
 import event_pb2
 
 try:

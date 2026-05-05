@@ -112,7 +112,7 @@ if __name__ == "__main__":
     print("--- JSON Benchmark ---")
     # Energy measured via single CodeCarbon run (TDP-estimated); timing repeated N times
     tracker_json = EmissionsTracker(project_name="JSON_Serialization", log_level="error",
-                                    measure_power_secs=1)
+                                    measure_power_secs=1, force_mode_cpu_load=True)
     tracker_json.start()
     j_size, j_mean, j_std = run_repeated(benchmark_json, events)
     json_emissions = tracker_json.stop()
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     # --- Protobuf ---
     print("\n--- Protobuf Benchmark ---")
     tracker_pb = EmissionsTracker(project_name="Protobuf_Serialization", log_level="error",
-                                  measure_power_secs=1)
+                                  measure_power_secs=1, force_mode_cpu_load=True)
     tracker_pb.start()
     p_size, p_mean, p_std = run_repeated(benchmark_protobuf, events)
     pb_emissions = tracker_pb.stop()
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     if HAS_MSGPACK:
         print("\n--- MessagePack Benchmark ---")
         tracker_msg = EmissionsTracker(project_name="MsgPack_Serialization", log_level="error",
-                                       measure_power_secs=1)
+                                       measure_power_secs=1, force_mode_cpu_load=True)
         tracker_msg.start()
         m_size, m_mean, m_std = run_repeated(benchmark_msgpack, events)
         msg_emissions = tracker_msg.stop()

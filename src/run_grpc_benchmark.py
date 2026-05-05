@@ -1,7 +1,8 @@
 """
 gRPC/Protobuf vs REST/JSON network benchmark.
 Sequential and concurrent modes, 5 runs each.
-Runs Flask and gRPC servers as non-daemon threads so they stay alive.
+Runs Flask and gRPC servers in background threads for the duration
+of the benchmark.
 """
 import time
 import threading
@@ -16,6 +17,7 @@ from concurrent import futures
 from flask import Flask, request, jsonify
 import logging
 import requests as req_lib
+from codecarbon import EmissionsTracker
 import event_pb2
 import event_pb2_grpc
 
@@ -103,8 +105,22 @@ def run_n(fn, events, n=NUM_RUNS):
         t = fn(events)
         times.append(t)
         print(f"    run {i+1}: {t:.3f}s")
-        time.sleep(0.5)
+        time.sleep(0.2)
     return statistics.mean(times), statistics.stdev(times) if n > 1 else 0.0
+
+
+def run_n_with_energy(project_name, fn, events, n=NUM_RUNS):
+    """Measure mean/stddev latency and CodeCarbon-estimated energy for n runs."""
+    tracker = EmissionsTracker(
+        project_name=project_name,
+        log_level="error",
+        measure_power_secs=1,
+        force_mode_cpu_load=True,
+    )
+    tracker.start()
+    mean, std = run_n(fn, events, n=n)
+    tracker.stop()
+    return mean, std, tracker._total_energy.kWh
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
@@ -118,7 +134,7 @@ if __name__ == '__main__':
     flask_thread = threading.Thread(
         target=lambda: app.run(host='0.0.0.0', port=REST_PORT,
                                debug=False, use_reloader=False, threaded=True),
-        daemon=False
+        daemon=True
     )
     flask_thread.start()
 
@@ -138,32 +154,41 @@ if __name__ == '__main__':
 
     print("=== Sequential (1 request at a time) ===")
     print("  REST/JSON:")
-    rs_mean, rs_std = run_n(rest_sequential, events)
-    print(f"  → {rs_mean:.3f} ± {rs_std:.3f} s\n")
+    rs_mean, rs_std, rs_energy = run_n_with_energy("REST_JSON_Network_Sequential", rest_sequential, events)
+    print(f"  → {rs_mean:.3f} ± {rs_std:.3f} s")
+    print(f"  → {rs_energy:.8f} kWh (TDP-estimated)\n")
 
     print("  gRPC/Protobuf:")
-    gs_mean, gs_std = run_n(grpc_sequential, events)
+    gs_mean, gs_std, gs_energy = run_n_with_energy("gRPC_Protobuf_Network_Sequential", grpc_sequential, events)
     print(f"  → {gs_mean:.3f} ± {gs_std:.3f} s")
+    print(f"  → {gs_energy:.8f} kWh (TDP-estimated)")
     print(f"  Latency reduction: {(rs_mean - gs_mean) / rs_mean * 100:.1f}%\n")
+    if rs_energy > 0:
+        print(f"  Energy reduction:  {(rs_energy - gs_energy) / rs_energy * 100:.1f}%  (TDP-estimated)\n")
 
     print(f"=== Concurrent ({CONCURRENCY} parallel requests) ===")
     print("  REST/JSON:")
-    rc_mean, rc_std = run_n(rest_concurrent, events)
-    print(f"  → {rc_mean:.3f} ± {rc_std:.3f} s\n")
+    rc_mean, rc_std, rc_energy = run_n_with_energy("REST_JSON_Network_Concurrent", rest_concurrent, events)
+    print(f"  → {rc_mean:.3f} ± {rc_std:.3f} s")
+    print(f"  → {rc_energy:.8f} kWh (TDP-estimated)\n")
 
     print("  gRPC/Protobuf:")
-    gc_mean, gc_std = run_n(grpc_concurrent, events)
+    gc_mean, gc_std, gc_energy = run_n_with_energy("gRPC_Protobuf_Network_Concurrent", grpc_concurrent, events)
     print(f"  → {gc_mean:.3f} ± {gc_std:.3f} s")
+    print(f"  → {gc_energy:.8f} kWh (TDP-estimated)")
     print(f"  Latency reduction: {(rc_mean - gc_mean) / rc_mean * 100:.1f}%\n")
+    if rc_energy > 0:
+        print(f"  Energy reduction:  {(rc_energy - gc_energy) / rc_energy * 100:.1f}%  (TDP-estimated)\n")
 
     print("=== SUMMARY ===")
     print(f"Sequential  REST: {rs_mean:.3f} ± {rs_std:.3f} s")
     print(f"Sequential  gRPC: {gs_mean:.3f} ± {gs_std:.3f} s  ({(rs_mean-gs_mean)/rs_mean*100:.1f}% faster)")
+    print(f"Sequential  REST energy: {rs_energy:.8f} kWh")
+    print(f"Sequential  gRPC energy: {gs_energy:.8f} kWh")
     print(f"Concurrent  REST: {rc_mean:.3f} ± {rc_std:.3f} s")
     print(f"Concurrent  gRPC: {gc_mean:.3f} ± {gc_std:.3f} s  ({(rc_mean-gc_mean)/rc_mean*100:.1f}% faster)")
-    print(f"\nNote: energy values from emissions.csv (TDP-estimated via CodeCarbon):")
-    print(f"  REST/JSON  sequential: 9.31e-05 kWh")
-    print(f"  gRPC/Proto sequential: 1.61e-05 kWh  (82.7% reduction)")
+    print(f"Concurrent  REST energy: {rc_energy:.8f} kWh")
+    print(f"Concurrent  gRPC energy: {gc_energy:.8f} kWh")
 
     grpc_srv.stop(0)
     sys.exit(0)
