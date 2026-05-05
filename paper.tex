@@ -6,7 +6,7 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage[hidelinks]{hyperref}
+\usepackage[colorlinks=true,urlcolor=blue,linkcolor=black,citecolor=black]{hyperref}
 \usepackage{url}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -25,7 +25,7 @@ Hyderabad, India \\
 \maketitle
 
 \begin{abstract}
-As enterprise software shifts to cloud-native microservices, architectural decisions like communication topology, message broker selection, and data serialization are usually optimized for speed and scalability. However, these choices directly impact hardware resource consumption (CPU, memory, disk I/O, and network bandwidth), which translates to physical energy use and carbon emissions. This paper evaluates three foundational pillars of event-driven architectures (EDA) through the lens of resource-use proxies for the Software Carbon Intensity (SCI) specification. Through controlled simulation and empirical benchmarking, we indicate that choosing parallel fan-out topologies over sequential chains reduces end-to-end latency by 66.1\%, replacing JSON with compiled Protocol Buffers reduces payload size by 77.5\% and CPU parsing time by 27.7\%, and selecting the appropriate message broker based on throughput alters the baseline CPU footprint. These experiments suggest that lower-latency topologies and more compact binary encodings can reduce resource-use proxies that may translate into lower energy consumption under an explicitly stated power model, providing guidance for sustainable software architecture.
+As enterprise software shifts to cloud-native microservices, architectural decisions like communication topology, message broker selection, and data serialization are usually optimized for speed and scalability. However, these choices directly impact hardware resource consumption (CPU, memory, disk I/O, and network bandwidth), which translates to physical energy use and carbon emissions. This paper evaluates three foundational pillars of event-driven architectures (EDA) through the lens of resource-use proxies for the Software Carbon Intensity (SCI) specification, cross-checked with direct hardware wattage sampling. Through controlled simulation and empirical benchmarking, we indicate that choosing parallel fan-out topologies over sequential chains reduces end-to-end latency by 66.1\%, replacing JSON with compiled Protocol Buffers reduces payload size by 77.5\% and CPU parsing time by 27.7\%, and selecting the appropriate message broker based on throughput alters the baseline CPU footprint. On-device \texttt{powermetrics} sampling on Apple M2 records up to 14.6\,W peak package draw for serialization and 11.7\,W for the gRPC/REST workload, with the topology benchmark barely exceeding the idle floor due to its I/O-bound nature. These experiments suggest that lower-latency topologies and more compact binary encodings can reduce resource-use proxies that may translate into lower energy consumption under an explicitly stated power model, providing guidance for sustainable software architecture.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -119,13 +119,14 @@ When factoring in the network layer, our empirical gRPC versus REST/JSON benchma
 To validate the CodeCarbon TDP estimates, we re-ran each benchmark under concurrent \texttt{powermetrics} sampling. Table~\ref{tab:hw_power} summarizes the measured per-benchmark energy (integrated $\int P\,dt$), mean CPU package power, and peak. The idle baseline for the same SoC sits below 900\,mW, so every benchmark draw reflects workload-attributable energy above the noise floor.
 
 \begin{table}[htbp]
-\caption{Directly measured CPU package power and energy per benchmark (Apple M2, \texttt{powermetrics --samplers cpu\_power}, 500\,ms interval).}
+\caption{Direct CPU package power and energy per benchmark (Apple M2, \texttt{powermetrics --samplers cpu\_power}, 500\,ms sampling).}
 \label{tab:hw_power}
 \centering
-\renewcommand{\arraystretch}{1.2}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{|l|r|r|r|r|}
 \hline
-\textbf{Benchmark} & \textbf{Dur. (s)} & \textbf{Mean (mW)} & \textbf{Peak (mW)} & \textbf{Energy (J)} \\
+\textbf{Benchmark} & \textbf{Dur (s)} & \textbf{Mean (mW)} & \textbf{Peak (mW)} & \textbf{E (J)} \\
 \hline
 Idle baseline        &   1.0 &   888 &    969 &   0.89 \\
 Broker model         &   1.0 &   814 &    949 &   0.82 \\
@@ -166,16 +167,16 @@ Figure~\ref{fig:broker} shows the modeled CPU utilization for RabbitMQ and Kafka
 As depicted in Figure~\ref{fig:broker}, RabbitMQ consumes only 6.5\% CPU at 1,000\,msg/s versus Kafka's 13.5\% baseline---a 52\% lower footprint at low load. At 5,000\,msg/s, RabbitMQ's super-linear scaling drives utilization to 52.3\%, while Kafka's linear model holds at 19.5\%. Beyond 10,000\,msg/s, the RabbitMQ model saturates (100\% CPU), while Kafka scales to 50,000\,msg/s at 87\% utilization. These results are model-derived, not physically measured; the crossover point and saturation threshold are sensitive to the baseline and scaling parameters, which were calibrated from industry benchmarks \cite{b5} rather than controlled experiments. Under these stated assumptions, RabbitMQ is the lower-overhead choice for low-volume deployments ($<$2,034\,msg/s), while Kafka minimizes per-message CPU cost at enterprise scale.
 
 \section{Future Work}
-While this simulation study effectively isolates the proxy metrics associated with microservice design patterns, our future work aims to physically deploy these architectures to calculate empirical energy consumption. The planned experimental scope focuses on the following primary objectives:
+While this simulation study effectively isolates the proxy metrics associated with microservice design patterns and cross-checks them against on-device \texttt{powermetrics} readings (Section~\ref{sec:hw_power}), the remaining gap is multi-node validation. The planned experimental scope focuses on the following primary objectives:
 \begin{itemize}
-    \item \textbf{Physical Microservice Testbed:} Deploying a controlled testbed (comprising 4 to 6 discrete services) via Docker containers onto a standardized, bare-metal infrastructure rather than simulating workloads on a local machine.
-    \item \textbf{Hardware Energy Telemetry:} Instrumenting the physical infrastructure to record actual power draw (Watts) using dedicated energy telemetry tools, capturing true physical data instead of relying on CPU utilization and memory payloads as proxies.
+    \item \textbf{Physical Microservice Testbed:} Deploying a controlled testbed (comprising 4 to 6 discrete services) via Docker containers onto a standardized, bare-metal infrastructure rather than co-locating workloads on a single laptop.
+    \item \textbf{Wall-Socket Energy Telemetry:} Instrumenting the host with an external power meter (e.g., a USB or PDU-level wattage logger) so that whole-system draw---including DRAM, SSD, and NIC---is captured, not only the CPU package already measured here.
     \item \textbf{SCI Metric Mapping:} Mapping the empirical energy consumed per functional unit (e.g., per 1,000 processed events) directly to the formal Software Carbon Intensity (SCI) specification, factoring in the regional carbon intensity of the electricity grid and embodied hardware emissions.
 \end{itemize}
-This will transition our findings from a theoretical resource model into a fully realized, empirical benchmark for green software engineering.
+This will transition our findings from a single-host resource model into a fully realized, empirical benchmark for green software engineering.
 
 \section{Conclusion}
-By measuring resource-use proxies across three controlled experiments, this study suggests that sustainability is shaped by architectural decisions long before code-level optimizations occur. Parallel fan-out topologies reduce thread-blocking latency by 66.1\% over sequential chains. Compiled binary serialization (Protobuf) reduces payload size by 77.5\% and TDP-estimated energy by 15.8\% over JSON; gRPC over HTTP/2 amplifies this to an 84.3\% end-to-end latency reduction. Mathematical modeling indicates that Kafka's linear CPU scaling surpasses RabbitMQ's efficiency beyond approximately 2,034\,msg/s under the stated model assumptions. Together, these proxy metrics suggest that an architecture combining parallel choreography, binary serialization, and throughput-matched broker selection can substantially reduce the operational energy component ($E$) of the SCI formula. Future work will validate these findings with physical hardware energy telemetry on a containerized testbed.
+By measuring resource-use proxies across three controlled experiments, this study suggests that sustainability is shaped by architectural decisions long before code-level optimizations occur. Parallel fan-out topologies reduce thread-blocking latency by 66.1\% over sequential chains. Compiled binary serialization (Protobuf) reduces payload size by 77.5\% and TDP-estimated energy by 15.8\% over JSON; gRPC over HTTP/2 amplifies this to an 84.3\% end-to-end latency reduction, and direct on-device \texttt{powermetrics} sampling confirms the serialization pass sustains $7.8\,\text{W}$ mean and peaks near the M2 package envelope, anchoring the per-event energy figures in hardware. Mathematical modeling indicates that Kafka's linear CPU scaling surpasses RabbitMQ's efficiency beyond approximately 2,034\,msg/s under the stated model assumptions. Together, these proxy metrics suggest that an architecture combining parallel choreography, binary serialization, and throughput-matched broker selection can substantially reduce the operational energy component ($E$) of the SCI formula. Future work will validate these findings on a containerized multi-node testbed with external wall-socket power telemetry.
 
 \begin{thebibliography}{00}
 \bibitem{b1} R. Capuano, E. O'Dea, H. Muccini, and K. Vaidhyanathan, ``A Comparative Analysis of Monolith vs Microservices Energy Consumption,'' in \textit{Proc. 19th European Conference on Software Architecture (ECSA)}, Springer, 2025. [Online]. Available: \url{https://www.researchgate.net/publication/392945785}.
